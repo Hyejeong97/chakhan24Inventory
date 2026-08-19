@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>추천재고 계산기</title>
+  <title>추천수량 계산기</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; }
@@ -103,12 +103,12 @@
 </head>
 <body>
 <nav>
-  <div class="brand">착한가게24 · 추천 수량 계산</div>
+  <div class="brand">착한가게24 · 수량 계산</div>
   <div class="sub">바코드 기준 상품 매칭</div>
 </nav>
 <main>
   <h1>추천수량 계산기</h1>
-  <div class="desc">판매물품을 기준으로 분류별 매출의 판매수량을 바코드로 매칭해 차이수량을 계산합니다.</div>
+  <div class="desc">판매물품을 기준으로 분류별 매출 또는 메뉴별 매출현황의 판매수량을 바코드로 매칭해 차이수량을 계산합니다.</div>
 
   <section class="card">
     <div class="upload-grid">
@@ -119,8 +119,8 @@
         <div id="baseState" class="file-state">파일을 선택해 주세요.</div>
       </div>
       <div class="upload-box">
-        <strong>② 분류별 매출</strong>
-        <small><b>대분류는 무시</b>하고, 바코드가 같은 행의 <b>수량</b>을 판매수량으로 사용합니다. 동일 바코드는 합산합니다.</small>
+        <strong>② 매출 엑셀 (2가지 양식 자동 호환)</strong>
+        <small>① <b>분류별 매출</b>: 바코드 / 상품명 / 수량 &nbsp; ② <b>메뉴별 매출현황</b>: 바코드번호 / 메뉴명 / 판매수량<br>        형식을 자동 판별하며, 대분류 행은 무시하고 동일 바코드는 판매수량을 합산합니다.</small>
         <input id="salesFile" type="file" accept=".xlsx,.xls,.cell" />
         <div id="salesState" class="file-state">파일을 선택해 주세요.</div>
       </div>
@@ -168,8 +168,9 @@
     </div>
     <div class="notice">
       * 결과의 기준 목록은 <b>판매물품</b>입니다.<br>
-      * <b>분류별 매출의 대분류 행은 사용하지 않습니다.</b><br>
-      * 동일 바코드가 분류별 매출에 여러 번 있으면 판매수량을 합산합니다.<br>
+      * <b>분류별 매출</b>과 <b>메뉴별 매출현황</b> 두 양식을 자동 인식합니다.<br>
+      * 분류별 매출의 대분류 행은 사용하지 않습니다.<br>
+      * 동일 바코드가 매출 파일에 여러 번 있으면 판매수량을 합산합니다.<br>
       * 분류별 매출에서 찾지 못한 기준 상품은 판매수량을 0으로 계산합니다.<br>
       * 차이수량은 음수도 그대로 표시합니다. 예: 추천 5, 판매 8 → -3
     </div>
@@ -247,25 +248,88 @@
   }
 
   function parseSales(rows) {
-    const headerIdx = findHeaderRow(rows, ['바코드', '상품명', '수량']);
-    if (headerIdx < 0) throw new Error('분류별 매출에서 "바코드 / 상품명 / 수량" 헤더를 찾지 못했습니다.');
-    const headers = rows[headerIdx].map(normalizeHeader);
-    const barcodeIdx = headers.indexOf('바코드');
-    const nameIdx = headers.indexOf('상품명');
-    const qtyIdx = headers.indexOf('수량');
+    // 지원 양식
+    // 1) 분류별 매출      : 바코드 / 상품명 / 수량
+    // 2) 메뉴별 매출현황  : 바코드번호 / 메뉴명 / 판매수량
+    const formats = [
+      {
+        type: '분류별 매출',
+        barcodeHeaders: ['바코드'],
+        nameHeaders: ['상품명'],
+        qtyHeaders: ['수량']
+      },
+      {
+        type: '메뉴별 매출현황',
+        barcodeHeaders: ['바코드번호', '바코드 번호'],
+        nameHeaders: ['메뉴명'],
+        qtyHeaders: ['판매수량', '판매 수량']
+      }
+    ];
+
+    let detected = null;
+
+    // 앞쪽 50행 안에서 각 양식의 필수 컬럼을 자동 탐지
+    for (let i = 0; i < Math.min(rows.length, 50); i++) {
+      const headers = rows[i].map(normalizeHeader);
+
+      for (const format of formats) {
+        const findAliasIndex = aliases => {
+          for (const alias of aliases) {
+            const idx = headers.indexOf(normalizeHeader(alias));
+            if (idx >= 0) return idx;
+          }
+          return -1;
+        };
+
+        const barcodeIdx = findAliasIndex(format.barcodeHeaders);
+        const nameIdx = findAliasIndex(format.nameHeaders);
+        const qtyIdx = findAliasIndex(format.qtyHeaders);
+
+        if (barcodeIdx >= 0 && nameIdx >= 0 && qtyIdx >= 0) {
+          detected = {
+            type: format.type,
+            headerIdx: i,
+            barcodeIdx,
+            nameIdx,
+            qtyIdx
+          };
+          break;
+        }
+      }
+      if (detected) break;
+    }
+
+    if (!detected) {
+      throw new Error(
+        '매출 엑셀 양식을 인식하지 못했습니다. ' +
+        '지원 형식: ① 바코드 / 상품명 / 수량  ② 바코드번호 / 메뉴명 / 판매수량'
+      );
+    }
 
     const out = [];
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const rawName = String(rows[i][nameIdx] ?? '').trim();
-      const rawBarcode = rows[i][barcodeIdx];
+    for (let i = detected.headerIdx + 1; i < rows.length; i++) {
+      const rawName = String(rows[i][detected.nameIdx] ?? '').trim();
+      const rawBarcode = rows[i][detected.barcodeIdx];
       const barcode = normalizeBarcode(rawBarcode);
 
-      // 대분류/소계/빈 행 등은 바코드가 없으므로 무시
+      // 대분류/소계/합계/빈 행 등 바코드가 없는 행은 제외
       if (!barcode) continue;
       if (rawName.startsWith('대분류:')) continue;
 
-      out.push({ barcode, name: rawName, sold: toNumber(rows[i][qtyIdx]) });
+      out.push({
+        barcode,
+        name: rawName,
+        sold: toNumber(rows[i][detected.qtyIdx]),
+        sourceType: detected.type
+      });
     }
+
+    if (!out.length) {
+      throw new Error(`${detected.type} 양식은 인식했지만 유효한 바코드 판매행을 찾지 못했습니다.`);
+    }
+
+    // 어떤 양식으로 읽혔는지 화면 상태표시에 사용
+    out.detectedType = detected.type;
     return out;
   }
 
@@ -281,7 +345,10 @@
     clearError();
     const wb = await readWorkbook(file);
     salesRows = parseSales(sheetToRows(wb));
-    $('salesState').innerHTML = `<span class="ok">${file.name}</span> · ${salesRows.length.toLocaleString()}개 판매행 인식`;
+    const detectedType = salesRows.detectedType || '매출 엑셀';
+    $('salesState').innerHTML =
+      `<span class="ok">${file.name}</span> · <b>${detectedType}</b> 형식 · ` +
+      `${salesRows.length.toLocaleString()}개 판매행 인식`;
     updateReady();
   }
 
