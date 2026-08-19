@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>97호 추천수량 계산기</title>
+  <title>추천재고 계산기</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     * { box-sizing: border-box; }
@@ -103,17 +103,17 @@
 </head>
 <body>
 <nav>
-  <div class="brand">착한가게24 · 97호 수량 계산</div>
+  <div class="brand">착한가게24 · 추천 수량 계산</div>
   <div class="sub">바코드 기준 상품 매칭</div>
 </nav>
 <main>
-  <h1>97호 추천수량 계산기</h1>
-  <div class="desc">97호 판매물품을 기준으로 분류별 매출의 판매수량을 바코드로 매칭해 차이수량을 계산합니다.</div>
+  <h1>추천수량 계산기</h1>
+  <div class="desc">판매물품을 기준으로 분류별 매출의 판매수량을 바코드로 매칭해 차이수량을 계산합니다.</div>
 
   <section class="card">
     <div class="upload-grid">
       <div class="upload-box">
-        <strong>① 97호_판매물품 데이터</strong>
+        <strong>① 판매물품 데이터</strong>
         <small>기준 데이터입니다. <b>바코드 / 상품명 / 추천수량</b> 컬럼을 사용합니다. .cell / .xlsx / .xls 지원</small>
         <input id="baseFile" type="file" accept=".cell,.xlsx,.xls" />
         <div id="baseState" class="file-state">파일을 선택해 주세요.</div>
@@ -167,7 +167,7 @@
       </table>
     </div>
     <div class="notice">
-      * 결과의 기준 목록은 <b>97호_판매물품</b>입니다.<br>
+      * 결과의 기준 목록은 <b>판매물품</b>입니다.<br>
       * <b>분류별 매출의 대분류 행은 사용하지 않습니다.</b><br>
       * 동일 바코드가 분류별 매출에 여러 번 있으면 판매수량을 합산합니다.<br>
       * 분류별 매출에서 찾지 못한 기준 상품은 판매수량을 0으로 계산합니다.<br>
@@ -229,7 +229,7 @@
 
   function parseBase(rows) {
     const headerIdx = findHeaderRow(rows, ['바코드', '상품명', '추천수량']);
-    if (headerIdx < 0) throw new Error('97호_판매물품에서 "바코드 / 상품명 / 추천수량" 헤더를 찾지 못했습니다.');
+    if (headerIdx < 0) throw new Error('판매물품에서 "바코드 / 상품명 / 추천수량" 헤더를 찾지 못했습니다.');
     const headers = rows[headerIdx].map(normalizeHeader);
     const barcodeIdx = headers.indexOf('바코드');
     const nameIdx = headers.indexOf('상품명');
@@ -367,10 +367,10 @@
     const ws = XLSX.utils.json_to_sheet(data);
     ws['!cols'] = [{wch:18},{wch:36},{wch:12},{wch:12},{wch:20},{wch:14}];
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '97호 계산결과');
+    XLSX.utils.book_append_sheet(wb, ws, '계산결과');
     const d = new Date();
     const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    XLSX.writeFile(wb, `97호_추천수량_계산결과_${ymd}.xlsx`);
+    XLSX.writeFile(wb, `추천수량_계산결과_${ymd}.xlsx`);
   }
 
   baseFile.addEventListener('change', async () => {
