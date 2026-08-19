@@ -1,461 +1,471 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>추천수량 계산기</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: Arial, "Noto Sans KR", sans-serif;
-      background: #f9fbff;
-      color: #333;
-    }
-    nav {
-      background: linear-gradient(90deg, #36c0d6, #3dd3e1);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 15px 30px;
-      position: sticky;
-      top: 0;
-      z-index: 100;
-      box-shadow: 0 3px 8px rgba(0,0,0,.1);
-      color: #fff;
-    }
-    nav .brand { font-size: 19px; font-weight: 800; }
-    nav .sub { font-size: 13px; opacity: .9; }
-    main { padding: 38px 5% 70px; max-width: 1500px; margin: 0 auto; }
-    h1 { margin: 0 0 8px; text-align: center; color: #3fa9f5; font-size: 28px; }
-    .desc { text-align: center; color: #667085; margin-bottom: 28px; }
-    .card {
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.06);
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-    .upload-box {
-      border: 2px dashed #cfeff3;
-      border-radius: 12px;
-      padding: 18px;
-      background: #fbfeff;
-    }
-    .upload-box strong { display: block; margin-bottom: 8px; font-size: 16px; }
-    .upload-box small { display: block; color: #777; margin: 7px 0 12px; line-height: 1.55; }
-    input[type=file] { width: 100%; }
-    .file-state { margin-top: 10px; font-size: 13px; color: #667085; word-break: break-all; }
-    .toolbar { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
-    .toolbar-left, .toolbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-    input[type=text] {
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      padding: 10px 12px;
-      font-size: 14px;
-      width: 260px;
-      outline: none;
-    }
-    input[type=text]:focus { border-color: #36c0d6; box-shadow: 0 0 5px rgba(54,192,214,.3); }
-    button {
-      border: none;
-      background: #36c0d6;
-      color: #fff;
-      padding: 10px 14px;
-      border-radius: 7px;
-      font-size: 14px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background .2s, transform .05s;
-    }
-    button:hover { background: #2fa4b0; }
-    button:active { transform: translateY(1px); }
-    button.secondary { background: #667085; }
-    button.secondary:hover { background: #515866; }
-    button:disabled { opacity: .45; cursor: not-allowed; }
-    .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
-    .stat { background: #f6fbfc; border: 1px solid #e1f3f5; border-radius: 10px; padding: 14px; }
-    .stat .label { color: #667085; font-size: 12px; }
-    .stat .value { font-size: 24px; font-weight: 800; margin-top: 4px; }
-    .table-wrap { overflow-x: auto; border-radius: 10px; }
-    table { border-collapse: collapse; width: 100%; min-width: 780px; background: #fff; }
-    th { background: #36c0d6; color: #fff; padding: 12px; font-size: 14px; position: sticky; top: 49px; z-index: 1; }
-    td { padding: 11px 12px; border-bottom: 1px solid #eaeaea; text-align: center; font-size: 14px; }
-    td.name { text-align: left; }
-    tbody tr:hover { background: #f8fdfe; }
-    tr.need td:last-child { font-weight: 800; color: #d9485f; }
-    tr.over td:last-child { font-weight: 800; color: #2878b5; }
-    .no-data { color: #999; font-style: italic; text-align: center; padding: 28px; }
-    .notice { margin-top: 14px; font-size: 13px; line-height: 1.7; color: #666; }
-    .notice b { color: #3fa9f5; }
-    .error { display: none; margin-top: 12px; background: #fff2f3; color: #b42318; border: 1px solid #f3c6ca; border-radius: 8px; padding: 11px 13px; white-space: pre-wrap; }
-    .ok { color: #14804a; }
-    @media (max-width: 800px) {
-      .upload-grid, .summary { grid-template-columns: 1fr; }
-      nav { padding: 13px 18px; }
-      main { padding: 28px 14px 50px; }
-      input[type=text] { width: 100%; }
-      .toolbar-left { width: 100%; }
-    }
-  </style>
+ <meta charset="UTF-8" />
+ <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+ <title>추천수량 계산기</title>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+ <style>
+  * { box-sizing: border-box; }
+  body {
+   margin: 0;
+   font-family: Arial, "Noto Sans KR", sans-serif;
+   background: #f9fbff;
+   color: #333;
+  }
+  nav {
+   background: linear-gradient(90deg, #36c0d6, #3dd3e1);
+   display: flex;
+   justify-content: space-between;
+   align-items: center;
+   padding: 15px 30px;
+   position: sticky;
+   top: 0;
+   z-index: 100;
+   box-shadow: 0 3px 8px rgba(0,0,0,.1);
+   color: #fff;
+  }
+  nav .brand { font-size: 19px; font-weight: 800; }
+  nav .sub { font-size: 13px; opacity: .9; }
+  main { padding: 38px 5% 70px; max-width: 1500px; margin: 0 auto; }
+  h1 { margin: 0 0 8px; text-align: center; color: #3fa9f5; font-size: 28px; }
+  .desc { text-align: center; color: #667085; margin-bottom: 28px; }
+  .card {
+   background: #fff;
+   border-radius: 12px;
+   box-shadow: 0 2px 10px rgba(0,0,0,.06);
+   padding: 20px;
+   margin-bottom: 20px;
+  }
+  .upload-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .upload-box {
+   border: 2px dashed #cfeff3;
+   border-radius: 12px;
+   padding: 18px;
+   background: #fbfeff;
+  }
+  .upload-box strong { display: block; margin-bottom: 8px; font-size: 16px; }
+  .upload-box small { display: block; color: #777; margin: 7px 0 12px; line-height: 1.55; }
+  input[type=file] { width: 100%; }
+  .file-state { margin-top: 10px; font-size: 13px; color: #667085; word-break: break-all; }
+  .toolbar { display: flex; gap: 10px; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+  .toolbar-left, .toolbar-right { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  input[type=text] {
+   border: 1px solid #ccc;
+   border-radius: 6px;
+   padding: 10px 12px;
+   font-size: 14px;
+   width: 260px;
+   outline: none;
+  }
+  input[type=text]:focus { border-color: #36c0d6; box-shadow: 0 0 5px rgba(54,192,214,.3); }
+  button {
+   border: none;
+   background: #36c0d6;
+   color: #fff;
+   padding: 10px 14px;
+   border-radius: 7px;
+   font-size: 14px;
+   font-weight: 700;
+   cursor: pointer;
+   transition: background .2s, transform .05s;
+  }
+  button:hover { background: #2fa4b0; }
+  button:active { transform: translateY(1px); }
+  button.secondary { background: #667085; }
+  button.secondary:hover { background: #515866; }
+  button:disabled { opacity: .45; cursor: not-allowed; }
+  .summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 18px; }
+  .stat { background: #f6fbfc; border: 1px solid #e1f3f5; border-radius: 10px; padding: 14px; }
+  .stat .label { color: #667085; font-size: 12px; }
+  .stat .value { font-size: 24px; font-weight: 800; margin-top: 4px; }
+  .table-wrap { overflow-x: auto; border-radius: 10px; }
+  table { border-collapse: collapse; width: 100%; min-width: 780px; background: #fff; }
+  th { background: #36c0d6; color: #fff; padding: 12px; font-size: 14px; position: sticky; top: 49px; z-index: 1; }
+  td { padding: 11px 12px; border-bottom: 1px solid #eaeaea; text-align: center; font-size: 14px; }
+  td.name { text-align: left; }
+  tbody tr:hover { background: #f8fdfe; }
+  tr.need td:last-child { font-weight: 800; color: #d9485f; }
+  tr.over td:last-child { font-weight: 800; color: #2878b5; }
+  .no-data { color: #999; font-style: italic; text-align: center; padding: 28px; }
+  .notice { margin-top: 14px; font-size: 13px; line-height: 1.7; color: #666; }
+  .notice b { color: #3fa9f5; }
+  .error { display: none; margin-top: 12px; background: #fff2f3; color: #b42318; border: 1px solid #f3c6ca; border-radius: 8px; padding: 11px 13px; white-space: pre-wrap; }
+  .ok { color: #14804a; }
+  @media (max-width: 800px) {
+   .upload-grid, .summary { grid-template-columns: 1fr; }
+   nav { padding: 13px 18px; }
+   main { padding: 28px 14px 50px; }
+   input[type=text] { width: 100%; }
+   .toolbar-left { width: 100%; }
+  }
+ 
+  .purchaseHeader {
+   color: #fff;
+  }
+  td.purchaseQty {
+   color: #d90000;
+   font-weight: 800;
+  }
+
+</style>
 </head>
 <body>
 <nav>
-  <div class="brand">착한가게24 · 수량 계산</div>
-  <div class="sub">바코드 기준 상품 매칭</div>
+ <div class="brand">착한가게24 · 수량 계산</div>
+ <div class="sub">바코드 기준 상품 매칭</div>
 </nav>
 <main>
-  <h1>추천수량 계산기</h1>
-  <div class="desc">판매물품을 기준으로 분류별 매출 또는 메뉴별 매출현황의 판매수량을 바코드로 매칭해 차이수량을 계산합니다.</div>
+ <h1>추천수량 계산기</h1>
+ <div class="desc">판매물품을 기준으로 분류별 매출 또는 메뉴별 매출현황의 판매수량을 바코드로 매칭해 재고수량과 구매예정수량을 계산합니다.</div>
 
-  <section class="card">
-    <div class="upload-grid">
-      <div class="upload-box">
-        <strong>① 판매물품 데이터</strong>
-        <small>기준 데이터입니다. <b>바코드 / 상품명 / 추천수량</b> 컬럼을 사용합니다. .cell / .xlsx / .xls 지원</small>
-        <input id="baseFile" type="file" accept=".cell,.xlsx,.xls" />
-        <div id="baseState" class="file-state">파일을 선택해 주세요.</div>
-      </div>
-      <div class="upload-box">
-        <strong>② 매출 엑셀 (2가지 양식 자동 호환)</strong>
-        <small>① <b>분류별 매출</b>: 바코드 / 상품명 / 수량 &nbsp; ② <b>메뉴별 매출현황</b>: 바코드번호 / 메뉴명 / 판매수량<br>        형식을 자동 판별하며, 대분류 행은 무시하고 동일 바코드는 판매수량을 합산합니다.</small>
-        <input id="salesFile" type="file" accept=".xlsx,.xls,.cell" />
-        <div id="salesState" class="file-state">파일을 선택해 주세요.</div>
-      </div>
-    </div>
-    <div style="margin-top:16px;text-align:center;">
-      <button id="calcBtn" disabled>바코드 매칭 및 계산</button>
-      <button id="resetBtn" class="secondary">초기화</button>
-    </div>
-    <div id="errorBox" class="error"></div>
-  </section>
+ <section class="card">
+  <div class="upload-grid">
+   <div class="upload-box">
+    <strong>① 판매물품 데이터</strong>
+    <small>기준 데이터입니다. <b>바코드 / 상품명 / 추천수량</b> 컬럼을 사용합니다. .cell / .xlsx / .xls 지원</small>
+    <input id="baseFile" type="file" accept=".cell,.xlsx,.xls" />
+    <div id="baseState" class="file-state">파일을 선택해 주세요.</div>
+   </div>
+   <div class="upload-box">
+    <strong>② 매출 엑셀 (2가지 양식 자동 호환)</strong>
+    <small>① <b>분류별 매출</b>: 바코드 / 상품명 / 수량 &nbsp; ② <b>메뉴별 매출현황</b>: 바코드번호 / 메뉴명 / 판매수량<br>    형식을 자동 판별하며, 대분류 행은 무시하고 동일 바코드는 판매수량을 합산합니다.</small>
+    <input id="salesFile" type="file" accept=".xlsx,.xls,.cell" />
+    <div id="salesState" class="file-state">파일을 선택해 주세요.</div>
+   </div>
+  </div>
+  <div style="margin-top:16px;text-align:center;">
+   <button id="calcBtn" disabled>바코드 매칭 및 계산</button>
+   <button id="resetBtn" class="secondary">초기화</button>
+  </div>
+  <div id="errorBox" class="error"></div>
+ </section>
 
-  <section class="card">
-    <div class="toolbar">
-      <div class="toolbar-left">
-        <input id="searchInput" type="text" placeholder="상품명 또는 바코드 검색" />
-        <button id="searchBtn">검색</button>
-        <label style="font-size:13px;color:#555;"><input id="onlyNeed" type="checkbox" /> 차이수량 1개 이상만</label>
-      </div>
-      <div class="toolbar-right">
-        <button id="downloadBtn" disabled>결과 엑셀 다운로드</button>
-      </div>
-    </div>
+ <section class="card">
+  <div class="toolbar">
+   <div class="toolbar-left">
+    <input id="searchInput" type="text" placeholder="상품명 또는 바코드 검색" />
+    <button id="searchBtn">검색</button>
+    <label style="font-size:13px;color:#555;"><input id="onlyNeed" type="checkbox" /> 재고수량 1개 이상만</label>
+   </div>
+   <div class="toolbar-right">
+    <button id="downloadBtn" disabled>결과 엑셀 다운로드</button>
+   </div>
+  </div>
 
-    <div class="summary">
-      <div class="stat"><div class="label">기준 상품 수</div><div id="baseCount" class="value">0</div></div>
-      <div class="stat"><div class="label">바코드 매칭 상품 수</div><div id="matchedCount" class="value">0</div></div>
-      <div class="stat"><div class="label">미매칭 상품 수</div><div id="unmatchedCount" class="value">0</div></div>
-      <div class="stat"><div class="label">차이수량 합계</div><div id="diffTotal" class="value">0</div></div>
-    </div>
+  <div class="summary">
+   <div class="stat"><div class="label">기준 상품 수</div><div id="baseCount" class="value">0</div></div>
+   <div class="stat"><div class="label">바코드 매칭 상품 수</div><div id="matchedCount" class="value">0</div></div>
+   <div class="stat"><div class="label">미매칭 상품 수</div><div id="unmatchedCount" class="value">0</div></div>
+   <div class="stat"><div class="label">재고수량 합계</div><div id="diffTotal" class="value">0</div></div>
+  </div>
 
-    <div class="table-wrap" style="margin-top:18px;">
-      <table id="resultTable">
-        <thead>
-          <tr>
-            <th>No.</th>
-            <th>바코드</th>
-            <th>상품명</th>
-            <th>추천수량</th>
-            <th>판매수량</th>
-            <th>차이수량<br>(추천-판매)</th>
-          </tr>
-        </thead>
-        <tbody><tr><td class="no-data" colspan="6">두 파일을 업로드한 뒤 계산 버튼을 눌러 주세요.</td></tr></tbody>
-      </table>
-    </div>
-    <div class="notice">
-      * 결과의 기준 목록은 <b>판매물품</b>입니다.<br>
-      * <b>분류별 매출</b>과 <b>메뉴별 매출현황</b> 두 양식을 자동 인식합니다.<br>
-      * 분류별 매출의 대분류 행은 사용하지 않습니다.<br>
-      * 동일 바코드가 매출 파일에 여러 번 있으면 판매수량을 합산합니다.<br>
-      * 분류별 매출에서 찾지 못한 기준 상품은 판매수량을 0으로 계산합니다.<br>
-      * 차이수량은 음수도 그대로 표시합니다. 예: 추천 5, 판매 8 → -3
-    </div>
-  </section>
+  <div class="table-wrap" style="margin-top:18px;">
+   <table id="resultTable">
+    <thead>
+     <tr>
+      <th>바코드</th>
+      <th>상품명</th>
+      <th>추천수량(A)</th>
+      <th>판매수량(B)</th>
+      <th>재고수량(A-B)</th>
+      <th>구매예정수량(C)</th>
+     </tr>
+    </thead>
+    <tbody><tr><td class="no-data" colspan="6">두 파일을 업로드한 뒤 계산 버튼을 눌러 주세요.</td></tr></tbody>
+   </table>
+  </div>
+  <div class="notice">
+   * 결과의 기준 목록은 <b>판매물품</b>입니다.<br>
+   * <b>분류별 매출</b>과 <b>메뉴별 매출현황</b> 두 양식을 자동 인식합니다.<br>
+   * 분류별 매출의 대분류 행은 사용하지 않습니다.<br>
+   * 동일 바코드가 매출 파일에 여러 번 있으면 판매수량을 합산합니다.<br>   * <b>구매예정수량(C)</b>은 판매수량(B)과 동일하게 계산하되, 추천수량(A)을 초과하지 않습니다.<br>
+   * 분류별 매출에서 찾지 못한 기준 상품은 판매수량을 0으로 계산합니다.<br>
+   * 재고수량은 음수도 그대로 표시합니다. 예: 추천 5, 판매 8 → -3
+  </div>
+ </section>
 </main>
 
 <script>
 (() => {
-  let baseRows = [];
-  let salesRows = [];
-  let resultRows = [];
+ let baseRows = [];
+ let salesRows = [];
+ let resultRows = [];
 
-  const $ = (id) => document.getElementById(id);
-  const baseFile = $('baseFile');
-  const salesFile = $('salesFile');
-  const calcBtn = $('calcBtn');
-  const downloadBtn = $('downloadBtn');
-  const tbody = document.querySelector('#resultTable tbody');
+ const $ = (id) => document.getElementById(id);
+ const baseFile = $('baseFile');
+ const salesFile = $('salesFile');
+ const calcBtn = $('calcBtn');
+ const downloadBtn = $('downloadBtn');
+ const tbody = document.querySelector('#resultTable tbody');
 
-  const normalizeHeader = (v) => String(v ?? '').replace(/\s+/g, '').trim();
-  const normalizeBarcode = (v) => {
-    if (v === null || v === undefined) return '';
-    if (typeof v === 'number' && Number.isFinite(v)) return String(Math.trunc(v));
-    return String(v).trim().replace(/\.0$/, '').replace(/\s+/g, '');
-  };
-  const toNumber = (v) => {
-    if (v === null || v === undefined || v === '') return 0;
-    const n = Number(String(v).replace(/,/g, '').trim());
-    return Number.isFinite(n) ? n : 0;
-  };
+ const normalizeHeader = (v) => String(v ?? '').replace(/\s+/g, '').trim();
+ const normalizeBarcode = (v) => {
+  if (v === null || v === undefined) return '';
+  if (typeof v === 'number' && Number.isFinite(v)) return String(Math.trunc(v));
+  return String(v).trim().replace(/\.0$/, '').replace(/\s+/g, '');
+ };
+ const toNumber = (v) => {
+  if (v === null || v === undefined || v === '') return 0;
+  const n = Number(String(v).replace(/,/g, '').trim());
+  return Number.isFinite(n) ? n : 0;
+ };
 
-  function showError(msg) {
-    const el = $('errorBox');
-    el.textContent = msg;
-    el.style.display = 'block';
+ function showError(msg) {
+  const el = $('errorBox');
+  el.textContent = msg;
+  el.style.display = 'block';
+ }
+ function clearError() { $('errorBox').style.display = 'none'; $('errorBox').textContent = ''; }
+
+ async function readWorkbook(file) {
+  const buf = await file.arrayBuffer();
+  return XLSX.read(buf, { type: 'array', cellDates: false, raw: false });
+ }
+
+ function sheetToRows(workbook) {
+  const ws = workbook.Sheets[workbook.SheetNames[0]];
+  return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
+ }
+
+ function findHeaderRow(rows, requiredHeaders) {
+  for (let i = 0; i < Math.min(rows.length, 50); i++) {
+   const normalized = rows[i].map(normalizeHeader);
+   const ok = requiredHeaders.every(h => normalized.includes(normalizeHeader(h)));
+   if (ok) return i;
   }
-  function clearError() { $('errorBox').style.display = 'none'; $('errorBox').textContent = ''; }
+  return -1;
+ }
 
-  async function readWorkbook(file) {
-    const buf = await file.arrayBuffer();
-    return XLSX.read(buf, { type: 'array', cellDates: false, raw: false });
+ function parseBase(rows) {
+  const headerIdx = findHeaderRow(rows, ['바코드', '상품명', '추천수량']);
+  if (headerIdx < 0) throw new Error('판매물품에서 "바코드 / 상품명 / 추천수량" 헤더를 찾지 못했습니다.');
+  const headers = rows[headerIdx].map(normalizeHeader);
+  const barcodeIdx = headers.indexOf('바코드');
+  const nameIdx = headers.indexOf('상품명');
+  const recIdx = headers.indexOf('추천수량');
+
+  const out = [];
+  for (let i = headerIdx + 1; i < rows.length; i++) {
+   const barcode = normalizeBarcode(rows[i][barcodeIdx]);
+   const name = String(rows[i][nameIdx] ?? '').trim();
+   if (!barcode && !name) continue;
+   if (!barcode) continue;
+   out.push({ barcode, name, recommended: toNumber(rows[i][recIdx]) });
   }
+  return out;
+ }
 
-  function sheetToRows(workbook) {
-    const ws = workbook.Sheets[workbook.SheetNames[0]];
-    return XLSX.utils.sheet_to_json(ws, { header: 1, defval: '', raw: false });
-  }
+ function parseSales(rows) {
+  // 지원 양식
+  // 1) 분류별 매출   : 바코드 / 상품명 / 수량
+  // 2) 메뉴별 매출현황 : 바코드번호 / 메뉴명 / 판매수량
+  const formats = [
+   {
+    type: '분류별 매출',
+    barcodeHeaders: ['바코드'],
+    nameHeaders: ['상품명'],
+    qtyHeaders: ['수량']
+   },
+   {
+    type: '메뉴별 매출현황',
+    barcodeHeaders: ['바코드번호', '바코드 번호'],
+    nameHeaders: ['메뉴명'],
+    qtyHeaders: ['판매수량', '판매 수량']
+   }
+  ];
 
-  function findHeaderRow(rows, requiredHeaders) {
-    for (let i = 0; i < Math.min(rows.length, 50); i++) {
-      const normalized = rows[i].map(normalizeHeader);
-      const ok = requiredHeaders.every(h => normalized.includes(normalizeHeader(h)));
-      if (ok) return i;
+  let detected = null;
+
+  // 앞쪽 50행 안에서 각 양식의 필수 컬럼을 자동 탐지
+  for (let i = 0; i < Math.min(rows.length, 50); i++) {
+   const headers = rows[i].map(normalizeHeader);
+
+   for (const format of formats) {
+    const findAliasIndex = aliases => {
+     for (const alias of aliases) {
+      const idx = headers.indexOf(normalizeHeader(alias));
+      if (idx >= 0) return idx;
+     }
+     return -1;
+    };
+
+    const barcodeIdx = findAliasIndex(format.barcodeHeaders);
+    const nameIdx = findAliasIndex(format.nameHeaders);
+    const qtyIdx = findAliasIndex(format.qtyHeaders);
+
+    if (barcodeIdx >= 0 && nameIdx >= 0 && qtyIdx >= 0) {
+     detected = {
+      type: format.type,
+      headerIdx: i,
+      barcodeIdx,
+      nameIdx,
+      qtyIdx
+     };
+     break;
     }
-    return -1;
+   }
+   if (detected) break;
   }
 
-  function parseBase(rows) {
-    const headerIdx = findHeaderRow(rows, ['바코드', '상품명', '추천수량']);
-    if (headerIdx < 0) throw new Error('판매물품에서 "바코드 / 상품명 / 추천수량" 헤더를 찾지 못했습니다.');
-    const headers = rows[headerIdx].map(normalizeHeader);
-    const barcodeIdx = headers.indexOf('바코드');
-    const nameIdx = headers.indexOf('상품명');
-    const recIdx = headers.indexOf('추천수량');
-
-    const out = [];
-    for (let i = headerIdx + 1; i < rows.length; i++) {
-      const barcode = normalizeBarcode(rows[i][barcodeIdx]);
-      const name = String(rows[i][nameIdx] ?? '').trim();
-      if (!barcode && !name) continue;
-      if (!barcode) continue;
-      out.push({ barcode, name, recommended: toNumber(rows[i][recIdx]) });
-    }
-    return out;
+  if (!detected) {
+   throw new Error(
+    '매출 엑셀 양식을 인식하지 못했습니다. ' +
+    '지원 형식: ① 바코드 / 상품명 / 수량 ② 바코드번호 / 메뉴명 / 판매수량'
+   );
   }
 
-  function parseSales(rows) {
-    // 지원 양식
-    // 1) 분류별 매출      : 바코드 / 상품명 / 수량
-    // 2) 메뉴별 매출현황  : 바코드번호 / 메뉴명 / 판매수량
-    const formats = [
-      {
-        type: '분류별 매출',
-        barcodeHeaders: ['바코드'],
-        nameHeaders: ['상품명'],
-        qtyHeaders: ['수량']
-      },
-      {
-        type: '메뉴별 매출현황',
-        barcodeHeaders: ['바코드번호', '바코드 번호'],
-        nameHeaders: ['메뉴명'],
-        qtyHeaders: ['판매수량', '판매 수량']
-      }
-    ];
+  const out = [];
+  for (let i = detected.headerIdx + 1; i < rows.length; i++) {
+   const rawName = String(rows[i][detected.nameIdx] ?? '').trim();
+   const rawBarcode = rows[i][detected.barcodeIdx];
+   const barcode = normalizeBarcode(rawBarcode);
 
-    let detected = null;
+   // 대분류/소계/합계/빈 행 등 바코드가 없는 행은 제외
+   if (!barcode) continue;
+   if (rawName.startsWith('대분류:')) continue;
 
-    // 앞쪽 50행 안에서 각 양식의 필수 컬럼을 자동 탐지
-    for (let i = 0; i < Math.min(rows.length, 50); i++) {
-      const headers = rows[i].map(normalizeHeader);
-
-      for (const format of formats) {
-        const findAliasIndex = aliases => {
-          for (const alias of aliases) {
-            const idx = headers.indexOf(normalizeHeader(alias));
-            if (idx >= 0) return idx;
-          }
-          return -1;
-        };
-
-        const barcodeIdx = findAliasIndex(format.barcodeHeaders);
-        const nameIdx = findAliasIndex(format.nameHeaders);
-        const qtyIdx = findAliasIndex(format.qtyHeaders);
-
-        if (barcodeIdx >= 0 && nameIdx >= 0 && qtyIdx >= 0) {
-          detected = {
-            type: format.type,
-            headerIdx: i,
-            barcodeIdx,
-            nameIdx,
-            qtyIdx
-          };
-          break;
-        }
-      }
-      if (detected) break;
-    }
-
-    if (!detected) {
-      throw new Error(
-        '매출 엑셀 양식을 인식하지 못했습니다. ' +
-        '지원 형식: ① 바코드 / 상품명 / 수량  ② 바코드번호 / 메뉴명 / 판매수량'
-      );
-    }
-
-    const out = [];
-    for (let i = detected.headerIdx + 1; i < rows.length; i++) {
-      const rawName = String(rows[i][detected.nameIdx] ?? '').trim();
-      const rawBarcode = rows[i][detected.barcodeIdx];
-      const barcode = normalizeBarcode(rawBarcode);
-
-      // 대분류/소계/합계/빈 행 등 바코드가 없는 행은 제외
-      if (!barcode) continue;
-      if (rawName.startsWith('대분류:')) continue;
-
-      out.push({
-        barcode,
-        name: rawName,
-        sold: toNumber(rows[i][detected.qtyIdx]),
-        sourceType: detected.type
-      });
-    }
-
-    if (!out.length) {
-      throw new Error(`${detected.type} 양식은 인식했지만 유효한 바코드 판매행을 찾지 못했습니다.`);
-    }
-
-    // 어떤 양식으로 읽혔는지 화면 상태표시에 사용
-    out.detectedType = detected.type;
-    return out;
+   out.push({
+    barcode,
+    name: rawName,
+    sold: toNumber(rows[i][detected.qtyIdx]),
+    sourceType: detected.type
+   });
   }
 
-  async function loadBase(file) {
-    clearError();
-    const wb = await readWorkbook(file);
-    baseRows = parseBase(sheetToRows(wb));
-    $('baseState').innerHTML = `<span class="ok">${file.name}</span> · ${baseRows.length.toLocaleString()}개 상품 인식`;
-    updateReady();
+  if (!out.length) {
+   throw new Error(`${detected.type} 양식은 인식했지만 유효한 바코드 판매행을 찾지 못했습니다.`);
   }
 
-  async function loadSales(file) {
-    clearError();
-    const wb = await readWorkbook(file);
-    salesRows = parseSales(sheetToRows(wb));
-    const detectedType = salesRows.detectedType || '매출 엑셀';
-    $('salesState').innerHTML =
-      `<span class="ok">${file.name}</span> · <b>${detectedType}</b> 형식 · ` +
-      `${salesRows.length.toLocaleString()}개 판매행 인식`;
-    updateReady();
+  // 어떤 양식으로 읽혔는지 화면 상태표시에 사용
+  out.detectedType = detected.type;
+  return out;
+ }
+
+ async function loadBase(file) {
+  clearError();
+  const wb = await readWorkbook(file);
+  baseRows = parseBase(sheetToRows(wb));
+  $('baseState').innerHTML = `<span class="ok">${file.name}</span> · ${baseRows.length.toLocaleString()}개 상품 인식`;
+  updateReady();
+ }
+
+ async function loadSales(file) {
+  clearError();
+  const wb = await readWorkbook(file);
+  salesRows = parseSales(sheetToRows(wb));
+  const detectedType = salesRows.detectedType || '매출 엑셀';
+  $('salesState').innerHTML =
+   `<span class="ok">${file.name}</span> · <b>${detectedType}</b> 형식 · ` +
+   `${salesRows.length.toLocaleString()}개 판매행 인식`;
+  updateReady();
+ }
+
+ function updateReady() { calcBtn.disabled = !(baseRows.length && salesRows.length); }
+
+ function calculate() {
+  clearError();
+  const salesMap = new Map();
+  for (const row of salesRows) {
+   const prev = salesMap.get(row.barcode) || { sold: 0, names: new Set() };
+   prev.sold += row.sold;
+   if (row.name) prev.names.add(row.name);
+   salesMap.set(row.barcode, prev);
   }
 
-  function updateReady() { calcBtn.disabled = !(baseRows.length && salesRows.length); }
-
-  function calculate() {
-    clearError();
-    const salesMap = new Map();
-    for (const row of salesRows) {
-      const prev = salesMap.get(row.barcode) || { sold: 0, names: new Set() };
-      prev.sold += row.sold;
-      if (row.name) prev.names.add(row.name);
-      salesMap.set(row.barcode, prev);
-    }
-
-    resultRows = baseRows.map((row, idx) => {
-      const sales = salesMap.get(row.barcode);
-      const sold = sales ? sales.sold : 0;
-      return {
-        no: idx + 1,
-        barcode: row.barcode,
-        name: row.name,
-        recommended: row.recommended,
-        sold,
-        diff: row.recommended - sold,
-        matched: !!sales
-      };
-    });
-
-    $('baseCount').textContent = resultRows.length.toLocaleString();
-    const matched = resultRows.filter(r => r.matched).length;
-    $('matchedCount').textContent = matched.toLocaleString();
-    $('unmatchedCount').textContent = (resultRows.length - matched).toLocaleString();
-    $('diffTotal').textContent = resultRows.reduce((s, r) => s + r.diff, 0).toLocaleString();
-    downloadBtn.disabled = false;
-    render();
-  }
-
-  function render() {
-    const keyword = $('searchInput').value.trim().toLowerCase();
-    const onlyNeed = $('onlyNeed').checked;
-    const filtered = resultRows.filter(r => {
-      const matchKeyword = !keyword || r.name.toLowerCase().includes(keyword) || r.barcode.includes(keyword);
-      const matchNeed = !onlyNeed || r.diff >= 1;
-      return matchKeyword && matchNeed;
-    });
-
-    tbody.innerHTML = '';
-    if (!filtered.length) {
-      tbody.innerHTML = `<tr><td class="no-data" colspan="6">조건에 맞는 상품이 없습니다.</td></tr>`;
-      return;
-    }
-    const frag = document.createDocumentFragment();
-    filtered.forEach((r) => {
-      const tr = document.createElement('tr');
-      tr.className = r.diff > 0 ? 'need' : (r.diff < 0 ? 'over' : '');
-      tr.innerHTML = `
-        <td>${r.no}</td>
-        <td>${escapeHtml(r.barcode)}</td>
-        <td class="name">${escapeHtml(r.name)}</td>
-        <td>${formatNum(r.recommended)}</td>
-        <td>${formatNum(r.sold)}</td>
-        <td>${formatNum(r.diff)}</td>`;
-      frag.appendChild(tr);
-    });
-    tbody.appendChild(frag);
-  }
-
-  function formatNum(v) { return Number(v).toLocaleString('ko-KR'); }
-  function escapeHtml(v) {
-    return String(v).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
-  }
-
-  function downloadExcel() {
-    const data = resultRows.map(r => ({
-      '바코드': r.barcode,
-      '상품명': r.name,
-      '추천수량': r.recommended,
-      '판매수량': r.sold,
-      '차이수량(추천-판매)': r.diff,
-      '바코드매칭여부': r.matched ? 'Y' : 'N'
-    }));
-    const ws = XLSX.utils.json_to_sheet(data);
-    ws['!cols'] = [{wch:18},{wch:36},{wch:12},{wch:12},{wch:20},{wch:14}];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, '계산결과');
-    const d = new Date();
-    const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
-    XLSX.writeFile(wb, `추천수량_계산결과_${ymd}.xlsx`);
-  }
-
-  baseFile.addEventListener('change', async () => {
-    baseRows = []; resultRows = []; updateReady();
-    try { if (baseFile.files[0]) await loadBase(baseFile.files[0]); }
-    catch (e) { $('baseState').textContent = '파일 읽기 실패'; showError(e.message); }
+  resultRows = baseRows.map((row, idx) => {
+   const sales = salesMap.get(row.barcode);
+   const sold = sales ? sales.sold : 0;
+   return {
+    barcode: row.barcode,
+    name: row.name,
+    recommended: row.recommended,
+    sold,
+    diff: row.recommended - sold,
+    purchase: Math.min(sold, row.recommended),
+    matched: !!sales
+   };
   });
-  salesFile.addEventListener('change', async () => {
-    salesRows = []; resultRows = []; updateReady();
-    try { if (salesFile.files[0]) await loadSales(salesFile.files[0]); }
-    catch (e) { $('salesState').textContent = '파일 읽기 실패'; showError(e.message); }
+
+  $('baseCount').textContent = resultRows.length.toLocaleString();
+  const matched = resultRows.filter(r => r.matched).length;
+  $('matchedCount').textContent = matched.toLocaleString();
+  $('unmatchedCount').textContent = (resultRows.length - matched).toLocaleString();
+  $('diffTotal').textContent = resultRows.reduce((s, r) => s + r.diff, 0).toLocaleString();
+  downloadBtn.disabled = false;
+  render();
+ }
+
+ function render() {
+  const keyword = $('searchInput').value.trim().toLowerCase();
+  const onlyNeed = $('onlyNeed').checked;
+  const filtered = resultRows.filter(r => {
+   const matchKeyword = !keyword || r.name.toLowerCase().includes(keyword) || r.barcode.includes(keyword);
+   const matchNeed = !onlyNeed || r.diff >= 1;
+   return matchKeyword && matchNeed;
   });
-  calcBtn.addEventListener('click', calculate);
-  downloadBtn.addEventListener('click', downloadExcel);
-  $('searchBtn').addEventListener('click', render);
-  $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') render(); });
-  $('onlyNeed').addEventListener('change', render);
-  $('resetBtn').addEventListener('click', () => location.reload());
+
+  tbody.innerHTML = '';
+  if (!filtered.length) {
+   tbody.innerHTML = `<tr><td class="no-data" colspan="6">조건에 맞는 상품이 없습니다.</td></tr>`;
+   return;
+  }
+  const frag = document.createDocumentFragment();
+  filtered.forEach((r) => {
+   const tr = document.createElement('tr');
+   tr.className = r.diff > 0 ? 'need' : (r.diff < 0 ? 'over' : '');
+   tr.innerHTML = `
+    <td>${escapeHtml(r.barcode)}</td>
+    <td class="name">${escapeHtml(r.name)}</td>
+    <td>${formatNum(r.recommended)}</td>
+    <td>${formatNum(r.sold)}</td>
+    <td>${formatNum(r.diff)}</td>
+    <td class="purchaseQty">${formatNum(r.purchase)}</td>`;
+   frag.appendChild(tr);
+  });
+  tbody.appendChild(frag);
+ }
+
+ function formatNum(v) { return Number(v).toLocaleString('ko-KR'); }
+ function escapeHtml(v) {
+  return String(v).replace(/[&<>'"]/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[ch]));
+ }
+
+ function downloadExcel() {
+  const data = resultRows.map(r => ({
+   '바코드': r.barcode,
+   '상품명': r.name,
+   '추천수량(A)': r.recommended,
+   '판매수량(B)': r.sold,
+   '재고수량(A-B)': r.diff,
+   '구매예정수량(C)': r.purchase,
+   '바코드매칭여부': r.matched ? 'Y' : 'N'
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:18},{wch:36},{wch:14},{wch:14},{wch:16},{wch:18},{wch:14}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, ' 계산결과');
+  const d = new Date();
+  const ymd = `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+  XLSX.writeFile(wb, `추천수량_계산결과_${ymd}.xlsx`);
+ }
+
+ baseFile.addEventListener('change', async () => {
+  baseRows = []; resultRows = []; updateReady();
+  try { if (baseFile.files[0]) await loadBase(baseFile.files[0]); }
+  catch (e) { $('baseState').textContent = '파일 읽기 실패'; showError(e.message); }
+ });
+ salesFile.addEventListener('change', async () => {
+  salesRows = []; resultRows = []; updateReady();
+  try { if (salesFile.files[0]) await loadSales(salesFile.files[0]); }
+  catch (e) { $('salesState').textContent = '파일 읽기 실패'; showError(e.message); }
+ });
+ calcBtn.addEventListener('click', calculate);
+ downloadBtn.addEventListener('click', downloadExcel);
+ $('searchBtn').addEventListener('click', render);
+ $('searchInput').addEventListener('keydown', e => { if (e.key === 'Enter') render(); });
+ $('onlyNeed').addEventListener('change', render);
+ $('resetBtn').addEventListener('click', () => location.reload());
 })();
 </script>
 </body>
