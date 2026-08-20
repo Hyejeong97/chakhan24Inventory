@@ -158,6 +158,34 @@
    font-weight:700;
   }
 
+
+  /* 넓은 상품표 */
+  section { padding-left: 2%; padding-right: 2%; }
+  .container { max-width: none !important; width: 96% !important; }
+  .table-wrap { width: 100%; overflow-x: auto; }
+  #resultTable {
+   width: 100%;
+   min-width: 1900px;
+   table-layout: auto;
+  }
+  #resultTable th, #resultTable td {
+   padding: 11px 13px;
+   white-space: nowrap;
+  }
+  #resultTable th:nth-child(1), #resultTable td:nth-child(1) { min-width:145px; }
+  #resultTable th:nth-child(2), #resultTable td:nth-child(2) { min-width:150px; }
+  #resultTable th:nth-child(3), #resultTable td:nth-child(3) { min-width:105px; }
+  #resultTable th:nth-child(4), #resultTable td:nth-child(4) { min-width:280px; }
+  #resultTable th:nth-child(5), #resultTable td:nth-child(5) { min-width:130px; }
+  #resultTable th:nth-child(6), #resultTable td:nth-child(6) { min-width:130px; }
+  #resultTable th:nth-child(7), #resultTable td:nth-child(7) { min-width:125px; }
+  #resultTable th:nth-child(8), #resultTable td:nth-child(8) { min-width:125px; }
+  #resultTable th:nth-child(9), #resultTable td:nth-child(9) { min-width:150px; }
+  #resultTable th:nth-child(10), #resultTable td:nth-child(10) { min-width:165px; }
+  #resultTable th:nth-child(11), #resultTable td:nth-child(11) { min-width:125px; }
+  #resultTable th:nth-child(12), #resultTable td:nth-child(12) { min-width:165px; }
+  #resultTable td.name { white-space:normal; min-width:280px; text-align:left; }
+
 </style>
 </head>
 <body>
@@ -467,7 +495,8 @@
   baseRows = parseBase(sheetToRows(wb));
   const manufacturerCount = baseRows.filter(r => r.manufacturer).length;
   const categoryCount = baseRows.filter(r => r.category).length;
-  $('baseState').innerHTML = `<span class="ok">${file.name}</span> · ${baseRows.length.toLocaleString()}개 상품 인식 · 제조사 ${manufacturerCount.toLocaleString()}개 · 분류 ${categoryCount.toLocaleString()}개`;
+  const firstProductName = baseRows.length ? baseRows[0].name : '-';
+  $('baseState').innerHTML = `<span class="ok">${file.name}</span> · ${baseRows.length.toLocaleString()}개 상품 인식 · 제조사 ${manufacturerCount.toLocaleString()}개 · 분류 ${categoryCount.toLocaleString()}개 · 첫 상품: <b>${escapeHtml(firstProductName)}</b>`;
   updateReady();
  }
 
