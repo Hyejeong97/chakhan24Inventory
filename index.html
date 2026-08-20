@@ -166,6 +166,7 @@
       <option value="">도매분류 1순위 전체</option>
     </select>
     <button id="sortWholesale1Btn" class="secondary">1순위끼리 정렬</button>
+    <button id="resetSortBtn" class="secondary">정렬 초기화</button>
     <label style="font-size:13px;color:#555;"><input id="onlyNeed" type="checkbox" /> 재고수량 1개 이상만</label>
    </div>
    <div class="toolbar-right">
@@ -272,34 +273,59 @@
  function parseBase(rows) {
   const headerIdx = findHeaderRow(rows, ['바코드', '상품명', '추천수량']);
   if (headerIdx < 0) throw new Error('판매물품에서 "바코드 / 상품명 / 추천수량" 헤더를 찾지 못했습니다.');
-  const headers = rows[headerIdx].map(normalizeHeader);
-  const barcodeIdx = headers.indexOf('바코드');
-  const nameIdx = headers.indexOf('상품명');
-  const recIdx = headers.indexOf('추천수량');
-  const manufacturerIdx = headers.indexOf('제조사');
-  const categoryIdx = headers.indexOf('분류');
 
-  // 첨부 판매물품 양식의 도매분류 컬럼
-  const wholesale1Idx = headers.indexOf('도매분류1');
-  const wholesale2Idx = headers.indexOf('도매분류2');
+  const headers = rows[headerIdx].map(v => normalizeHeader(v));
+
+  const findIdx = (aliases) => {
+   for (const alias of aliases) {
+    const idx = headers.indexOf(normalizeHeader(alias));
+    if (idx >= 0) return idx;
+   }
+   return -1;
+  };
+
+  const barcodeIdx = findIdx(['바코드', '바코드번호', '바코드 번호']);
+  const nameIdx = findIdx(['상품명', '메뉴명']);
+  const recIdx = findIdx(['추천수량', '추천 수량']);
+  const wholesale1Idx = findIdx(['도매분류1', '도매분류 1', '도매분류1순위', '도매분류 1순위']);
+  const wholesale2Idx = findIdx(['도매분류2', '도매분류 2', '도매분류2순위', '도매분류 2순위']);
+  const manufacturerIdx = findIdx(['제조사', '제조사명', '브랜드', '업체명']);
+  const categoryIdx = findIdx(['분류', '상품분류', '카테고리']);
+
+  if (barcodeIdx < 0 || nameIdx < 0 || recIdx < 0) {
+   throw new Error('판매물품의 필수 컬럼(바코드 / 상품명 / 추천수량)을 찾지 못했습니다.');
+  }
 
   const out = [];
+
   for (let i = headerIdx + 1; i < rows.length; i++) {
-   const barcode = normalizeBarcode(rows[i][barcodeIdx]);
-   const name = String(rows[i][nameIdx] ?? '').trim();
+   const row = rows[i] || [];
+
+   const barcode = normalizeBarcode(row[barcodeIdx]);
+   const name = String(row[nameIdx] ?? '').trim();
+
    if (!barcode && !name) continue;
    if (!barcode) continue;
+
+   let manufacturer = manufacturerIdx >= 0 ? String(row[manufacturerIdx] ?? '').trim() : '';
+   let category = categoryIdx >= 0 ? String(row[categoryIdx] ?? '').trim() : '';
+
+   // 일부 CELL/XLSX 변환에서 뒤쪽 빈 셀들이 생략되는 경우 대비:
+   // 헤더 기준 열이 존재하면 해당 위치를 우선 사용하고, 없으면 빈값 유지
+   const wholesale1 = wholesale1Idx >= 0 ? String(row[wholesale1Idx] ?? '').trim() : '';
+   const wholesale2 = wholesale2Idx >= 0 ? String(row[wholesale2Idx] ?? '').trim() : '';
 
    out.push({
     barcode,
     name,
-    recommended: toNumber(rows[i][recIdx]),
-    manufacturer: manufacturerIdx >= 0 ? String(rows[i][manufacturerIdx] ?? '').trim() : '',
-    category: categoryIdx >= 0 ? String(rows[i][categoryIdx] ?? '').trim() : '',
-    wholesale1: wholesale1Idx >= 0 ? String(rows[i][wholesale1Idx] ?? '').trim() : '',
-    wholesale2: wholesale2Idx >= 0 ? String(rows[i][wholesale2Idx] ?? '').trim() : ''
+    recommended: toNumber(row[recIdx]),
+    wholesale1,
+    wholesale2,
+    manufacturer,
+    category
    });
   }
+
   return out;
  }
 
@@ -393,7 +419,9 @@
   clearError();
   const wb = await readWorkbook(file);
   baseRows = parseBase(sheetToRows(wb));
-  $('baseState').innerHTML = `<span class="ok">${file.name}</span> · ${baseRows.length.toLocaleString()}개 상품 인식`;
+  const manufacturerCount = baseRows.filter(r => r.manufacturer).length;
+  const categoryCount = baseRows.filter(r => r.category).length;
+  $('baseState').innerHTML = `<span class="ok">${file.name}</span> · ${baseRows.length.toLocaleString()}개 상품 인식 · 제조사 ${manufacturerCount.toLocaleString()}개 · 분류 ${categoryCount.toLocaleString()}개`;
   updateReady();
  }
 
@@ -472,6 +500,8 @@
    const searchTarget = [
     r.name,
     r.barcode,
+    r.manufacturer || '',
+    r.category || '',
     r.wholesale1 || '',
     r.wholesale2 || ''
    ].join(' ').toLowerCase();
@@ -527,6 +557,8 @@
    tr.className = r.diff > 0 ? 'need' : (r.diff < 0 ? 'over' : '');
    tr.innerHTML = `
     <td>${escapeHtml(r.barcode)}</td>
+    <td>${escapeHtml(r.manufacturer || '')}</td>
+    <td>${escapeHtml(r.category || '')}</td>
     <td class="name">${escapeHtml(r.name)}</td>
     <td>${escapeHtml(r.wholesale1 || '')}</td>
     <td>${escapeHtml(r.wholesale2 || '')}</td>
@@ -559,7 +591,7 @@
    '바코드매칭여부': r.matched ? 'Y' : 'N'
   }));
   const ws = XLSX.utils.json_to_sheet(data);
-  ws['!cols'] = [{wch:18},{wch:36},{wch:16},{wch:16},{wch:14},{wch:14},{wch:16},{wch:18},{wch:14}];
+  ws['!cols'] = [{wch:18},{wch:18},{wch:14},{wch:36},{wch:16},{wch:16},{wch:14},{wch:14},{wch:16},{wch:18},{wch:14}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, ' 계산결과');
   const d = new Date();
@@ -620,6 +652,19 @@
    $('sortWholesale1Btn').textContent = '1순위끼리 정렬';
    render();
   });
+ });
+
+ $('resetSortBtn').addEventListener('click', () => {
+  columnSorts = [];
+  wholesale1SortOn = false;
+
+  document.querySelectorAll('#resultTable th.sortable').forEach(item => {
+   item.classList.remove('sort-asc', 'sort-desc');
+   item.removeAttribute('data-sort-order');
+  });
+
+  $('sortWholesale1Btn').textContent = '1순위끼리 정렬';
+  render();
  });
 
  $('resetBtn').addEventListener('click', () => location.reload());
